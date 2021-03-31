@@ -203,7 +203,7 @@ def construct_argparser():
     return command_line_arguments
 
 
-def write_sequences(ppair, sfile, fformat, srecords):
+def write_seqs(ppair, sfile, fformat, srecords):
     """Creates separate sequence files for each primer pair."""
 
     p_pair = ppair.replace("/", "_x_")
@@ -213,38 +213,48 @@ def write_sequences(ppair, sfile, fformat, srecords):
     SeqIO.write(srecords, o_file, fformat)
 
 
-def main():
-    """Driving code."""
+def print_outputs(sep, mseqs, ffor, frev, ffmt):
+    """Print the tallies, and if appropriate, write sequences."""
 
-    args = construct_argparser()
+    if sep:
+        for items in sorted(
+            primer_pairs.items(),
+            reverse=True,
+            key=lambda x: len(primer_pairs[x[0]]["R1"]),
+        ):
 
-    construct_primer_dictionary(args.primers)
-    primer_lng_max = max(map(len, primers.keys()))
+            num_seqs = len(primer_pairs[items[0]]["R1"])
+            print(items[0], "\t", num_seqs)
 
-    file_forward = args.forward
-    file_reverse = args.reverse if args.reverse else \
-        file_forward.replace("_R1_", "_R2_")
-    file_format = "fastq" if re.search(r"\D+q$", file_forward) else "fasta"
+            if num_seqs >= mseqs:
+                write_seqs(items[0], ffor, ffmt, primer_pairs[items[0]]["R1"])
+                write_seqs(items[0], frev, ffmt, primer_pairs[items[0]]["R2"])
 
-    # Populate the global dictionary "primer_pairs"
-    with open(file_forward, "r") as handle_forward, \
-            open(file_reverse, "r") as handle_reverse:
+    else:
+        for items in sorted(primer_pairs.items(), reverse=True, key=lambda x: x[1]):
+            print(items[0], "\t", items[1])
+
+
+def populate_primer_pairs(file_fwd, file_rev, file_fmt, primer_lng, separate):
+    """Creates the dictionary to keep the tally of all primer pairs."""
+
+    with open(file_fwd, "r") as handle_forward, open(file_rev, "r") as handle_reverse:
 
         # Iterate simulatenously over the forward and reverse sequence records
         for rec_forward, rec_reverse in zip(
-            SeqIO.parse(handle_forward, file_format), SeqIO.parse(
-                handle_reverse, file_format)
+            SeqIO.parse(handle_forward, file_fmt), SeqIO.parse(
+                handle_reverse, file_fmt)
         ):
 
-            primer_forward = find_primer(str(rec_forward.seq[:primer_lng_max]))
-            primer_reverse = find_primer(str(rec_reverse.seq[:primer_lng_max]))
+            primer_forward = find_primer(str(rec_forward.seq[:primer_lng]))
+            primer_reverse = find_primer(str(rec_reverse.seq[:primer_lng]))
             primer_pair = [primer_forward[0], primer_reverse[0]]
 
             # Sort the list based on the last character of each primer name
             primer_pair.sort(key=lambda x: str.lower(list(x)[-1]))
             primer_pair_str = "/".join(primer_pair)
 
-            if args.separate:
+            if separate:
                 if primer_pair_str in primer_pairs:
                     primer_pairs[primer_pair_str]["R1"].append(rec_forward)
                     primer_pairs[primer_pair_str]["R2"].append(rec_reverse)
@@ -257,24 +267,27 @@ def main():
                 else:
                     primer_pairs[primer_pair_str] = 1
 
-    # Print the tallies, and if appropriate, write sequences
-    if args.separate:
-        for items in sorted(primer_pairs.items(), reverse=True,
-                            key=lambda x: len(primer_pairs[x[0]]["R1"])):
 
-            num_seqs = len(primer_pairs[items[0]]["R1"])
-            print(items[0], "\t", num_seqs)
+def main():
+    """Driving code."""
 
-            if num_seqs >= args.minreads:
-                write_sequences(items[0], file_forward, file_format,
-                                primer_pairs[items[0]]["R1"])
-                write_sequences(items[0], file_reverse, file_format,
-                                primer_pairs[items[0]]["R2"])
+    args = construct_argparser()
 
-    else:
-        for items in sorted(primer_pairs.items(), reverse=True,
-                            key=lambda x: x[1]):
-            print(items[0], "\t", items[1])
+    construct_primer_dictionary(args.primers)
+    primer_lng_max = max(map(len, primers.keys()))
+
+    file_forward = args.forward
+    file_reverse = (
+        args.reverse if args.reverse else file_forward.replace("_R1_", "_R2_")
+    )
+    file_format = "fastq" if re.search(r"\D+q$", file_forward) else "fasta"
+
+    populate_primer_pairs(
+        file_forward, file_reverse, file_format, primer_lng_max, args.separate
+    )
+
+    print_outputs(args.separate, args.minreads,
+                  file_forward, file_reverse, file_format)
 
 
 if __name__ == "__main__":
