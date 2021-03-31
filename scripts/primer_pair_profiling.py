@@ -164,7 +164,7 @@ def construct_primer_dictionary(primers_file):
 def construct_argparser():
     """Create an argparse object to collect command line arguments."""
 
-    parser = argparse.ArgumentParser(prog=__name__)
+    parser = argparse.ArgumentParser(prog="primer_pair_profiling.py")
 
     parser.add_argument(
         "-p",
