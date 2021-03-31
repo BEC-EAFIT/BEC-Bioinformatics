@@ -1,1 +1,1 @@
-# BEC-Bioinformatics
+# BEC-bioinformatics
