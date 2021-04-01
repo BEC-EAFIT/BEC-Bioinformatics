@@ -18,6 +18,7 @@ April 1, 2021
 """
 
 import sys
+import re
 import argparse
 import subprocess
 import logging
@@ -115,22 +116,20 @@ def tally_primers(args):
     files = get_files(args.directory, args.extension)
     file_names = []  # To keep track of all the (base) file names for printing.
 
-    for f in files:
-        file_name = f.name
+    for seq_f in files:
+        file_name = seq_f.name
         logger.info(f"Processing file {file_name}")
-        file_name = file_name.replace("." + args.extension, "")
 
+        file_name = re.sub(rf"\_R1.*\.{args.extension}", "", file_name)
         file_names.append(file_name)
 
         command = ["primer_pair_profiling.py", "-p" + args.primers,
-                   "-f" + f.as_posix(), "-m" + str(args.minreads)]
-
+                   "-f" + seq_f.as_posix(), "-m" + str(args.minreads)]
         if args.separate:
             command.append("-s")
 
-        output = subprocess.run(command, text=True, capture_output=True)
-
-        output.check_returncode()  # If non-zero, raise a CalledProcessError.
+        output = subprocess.run(
+            command, text=True, capture_output=True, check=True)
         output = output.stdout.rstrip().split("\n")  # Reutilize the variable.
 
         for line in output:
