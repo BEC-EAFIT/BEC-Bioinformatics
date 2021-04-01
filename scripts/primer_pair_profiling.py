@@ -182,7 +182,7 @@ def construct_argparser():
         "-r",
         "--reverse",
         help="reverse read sequences file; optional if forward reads file \
-              carries '_R1_' in the file name, otherwise it must be specified",
+              carries '_R1' in the file name, otherwise it must be specified",
     )
     parser.add_argument(
         "-s",
@@ -278,7 +278,7 @@ def main():
 
     file_forward = args.forward
     file_reverse = (
-        args.reverse if args.reverse else file_forward.replace("_R1_", "_R2_")
+        args.reverse if args.reverse else file_forward.replace("_R1", "_R2")
     )
     file_format = "fastq" if re.search(r"\D+q$", file_forward) else "fasta"
 
