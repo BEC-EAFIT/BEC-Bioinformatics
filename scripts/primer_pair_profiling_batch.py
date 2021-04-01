@@ -147,7 +147,10 @@ def print_tallies(file_names, out_file):
 
     logger.info(f"Printing results to file {out_file}")
 
+    file_names.sort()
+
     with open(out_file, "w") as out_handle:
+
         print("pair\t" + "\t".join(file_names), file=out_handle)
 
         primer_totals = {}
@@ -163,7 +166,8 @@ def print_tallies(file_names, out_file):
 
         for items in sorted(primer_totals.items(), key=lambda x: (-x[1], x[0].lower())):
             freqs = []
-            for file_n in sorted(file_names):
+
+            for file_n in file_names:
                 freqs.append(primer_pairs[items[0]][file_n])
 
             freqs = map(str, freqs)
@@ -182,7 +186,7 @@ def main():
     logger.addHandler(log_handler)
 
     logger.info(
-        f"Will collect all .{args.extension} files in {args.directory}")
+        f"Will collect all .{args.extension} files with forward reads in {args.directory}")
 
     file_names = tally_primers(args)
 
