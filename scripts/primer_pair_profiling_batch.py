@@ -123,7 +123,10 @@ def tally_primers(args):
         file_name = re.sub(rf"\_R1.*\.{args.extension}", "", file_name)
         file_names.append(file_name)
 
-        command = ["primer_pair_profiling.py", "-p" + args.primers,
+        scriptdir = sys.path[0]
+        script = scriptdir + "/primer_pair_profiling.py"
+
+        command = [script, "-p" + args.primers,
                    "-f" + seq_f.as_posix(), "-m" + str(args.minreads)]
         if args.separate:
             command.append("-s")
